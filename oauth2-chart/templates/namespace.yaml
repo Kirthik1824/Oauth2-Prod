@@ -1,0 +1,12 @@
+{{- if .Values.create_ns }}
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: {{ .Values.namespace }}
+  labels:
+    {{- include "oauth2-proxy.labels" . | nindent 4 }}
+    bu: all
+    name: {{ .Values.namespace }}
+  annotations:
+    helm.sh/resource-policy: keep
+{{- end }} 
