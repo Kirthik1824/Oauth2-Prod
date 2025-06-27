@@ -1,0 +1,69 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "oauth2-proxy.fullname" . }}
+  namespace: {{ .Values.namespace }}
+  labels:
+    {{- include "oauth2-proxy.labels" . | nindent 4 }}
+spec:
+  replicas: {{ .Values.replicaCount }}
+  selector:
+    matchLabels:
+      {{- include "oauth2-proxy.selectorLabels" . | nindent 6 }}
+  template:
+    metadata:
+      labels:
+        {{- include "oauth2-proxy.selectorLabels" . | nindent 8 }}
+    spec:
+      containers:
+      - name: {{ .Chart.Name }}
+        image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"
+        imagePullPolicy: {{ .Values.image.pullPolicy }}
+        ports:
+        - containerPort: {{ .Values.service.targetPort }}
+        args:
+        - --http-address={{ .Values.oauth2.httpAddress }}
+        - --provider={{ .Values.oauth2.provider }}
+        - --client-id={{ .Values.oauth2.clientId }}
+        - --client-secret={{ .Values.oauth2.clientSecret }}
+        - --cookie-secret={{ .Values.oauth2.cookieSecret }}
+        - --redirect-url={{ .Values.oauth2.redirectUrl }}
+        - --email-domain={{ .Values.oauth2.emailDomain }}
+        {{- if .Values.oauth2.passAuthorizationHeader }}
+        - --pass-authorization-header=true
+        {{- end }}
+        {{- if .Values.oauth2.passAccessToken }}
+        - --pass-access-token=true
+        {{- end }}
+        {{- if .Values.oauth2.passUserHeaders }}
+        - --pass-user-headers=true
+        {{- end }}
+        {{- if .Values.oauth2.setAuthorizationHeader }}
+        - --set-authorization-header=true
+        {{- end }}
+        {{- if .Values.oauth2.setXauthrequest }}
+        - --set-xauthrequest=true
+        {{- end }}
+        {{- if .Values.oauth2.skipProviderButton }}
+        - --skip-provider-button=true
+        {{- end }}
+        {{- if .Values.oauth2.whitelistDomain }}
+        - --whitelist-domain={{ .Values.oauth2.whitelistDomain }}
+        {{- end }}
+        - --cookie-domain={{ .Values.oauth2.cookieDomain }}
+        {{- if .Values.oauth2.reverseProxy }}
+        - --reverse-proxy=true
+        {{- end }}
+        resources:
+          {{- toYaml .Values.resources | nindent 10 }}
+      {{- with .Values.nodeSelector }}
+      nodeSelector:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.affinity }}
+      affinity:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.tolerations }}
+      tolerations:
+        {{- toYaml . | nindent 8 }} 

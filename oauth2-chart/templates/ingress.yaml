@@ -1,0 +1,23 @@
+{{- if .Values.ingress.enabled -}}
+apiVersion: traefik.containo.us/v1alpha1
+kind: IngressRoute
+metadata:
+  name: {{ include "oauth2-proxy.fullname" . }}
+  namespace: {{ .Values.namespace }}
+  labels:
+    {{- include "oauth2-proxy.labels" . | nindent 4 }}
+  annotations:
+    kubernetes.io/ingress.class: {{ .Values.ingress.className }}
+spec:
+  entryPoints:
+  {{- range .Values.ingress.entryPoints }}
+  - {{ . }}
+  {{- end }}
+  routes:
+  - kind: Rule
+    match: Host(`{{ .Values.ingress.host }}`)
+    services:
+    - name: {{ include "oauth2-proxy.fullname" . }}
+      namespace: {{ .Values.namespace }}
+      port: {{ .Values.service.port }}
+{{- end }} 

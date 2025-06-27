@@ -1,0 +1,51 @@
+replicaCount: 1
+
+image:
+  repository: quay.io/oauth2-proxy/oauth2-proxy
+  tag: "v7.4.0"
+  pullPolicy: IfNotPresent
+
+nameOverride: ""
+fullnameOverride: ""
+
+namespace: oauth2-test
+
+oauth2:
+  provider: google
+  clientId: "1056549117847-q78vl39mkvic5da30ugsokrsls6k8gl8.apps.googleusercontent.com"
+  clientSecret: "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"
+  cookieSecret: "k9fBB9DYqfFRsrHoK4XIl7Usg8kfEJhdQDtTo0IiyFE="
+  redirectUrl: "https://oauth-test.razorpay.com/oauth2/callback"
+  emailDomain: "*"
+  cookieDomain: "razorpay.com"
+  httpAddress: "0.0.0.0:4180"
+  
+  # Additional OAuth2 proxy arguments
+  passAuthorizationHeader: true
+  passAccessToken: true
+  passUserHeaders: true
+  setAuthorizationHeader: true
+  setXauthrequest: true
+  skipProviderButton: true
+  reverseProxy: true
+  # whitelistDomain: "kirthik.razorpay.com"
+
+service:
+  type: ClusterIP
+  port: 80
+  targetPort: 4180
+
+ingress:
+  enabled: true
+  className: "traefik-external"
+  host: "oauth-test.razorpay.com"
+  entryPoints:
+    - web
+
+resources: {}
+
+nodeSelector: {}
+
+tolerations: []
+
+affinity: {} 
