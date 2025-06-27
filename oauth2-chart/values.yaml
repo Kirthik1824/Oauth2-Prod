@@ -31,7 +31,7 @@ oauth2:
   
   # Configuration values (will be templated into config file)
   httpAddress: "0.0.0.0:4180"
-  redirectUrl: "https://oauth2-proxy.concierge.stage.razorpay.in/oauth2/callback"
+  redirectUrl: "https://oauth2-proxy.razorpay.com/oauth2/callback"
   emailDomain: "*"
   cookieDomain: "razorpay.com"
   
@@ -63,7 +63,7 @@ service:
 ingress:
   enabled: true
   className: "traefik-concierge"
-  host: "oauth2-proxy.concierge.stage.razorpay.in"
+  host: "oauth2-proxy.razorpay.com"
   entryPoints:
     - web
   middlewareNamespace: "traefik-v2"
