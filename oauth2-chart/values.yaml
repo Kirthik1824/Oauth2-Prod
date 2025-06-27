@@ -5,7 +5,7 @@ create_ns: true
 
 # Image configuration  
 web_image_tag: "oauth2-proxy:v7.4.0"
-image_repository: c.rzp.io/razorpay
+image_repository: c.rzp.io/razorpay #Do we have this image there in the registry?
 
 # Deployment configuration
 oauth2_proxy_replicas: 1
@@ -15,9 +15,6 @@ oauth2_proxy_dns_policy: ClusterFirst
 # Resource configuration
 web_requests_cpu: 50m
 web_requests_memory: 50Mi
-
-# IAM configuration
-iamrolename: stage-oauth2-proxy
 
 # OAuth2 configuration
 oauth2:
@@ -43,7 +40,6 @@ oauth2:
   setXauthrequest: true
   skipProviderButton: true
   reverseProxy: true
-  # whitelistDomain: "kirthik.razorpay.com"
 
   # Google Groups configuration
   googleGroups:
@@ -52,6 +48,7 @@ oauth2:
     allowedGroups:
       - "developers@razorpay.com"
       - "devops@razorpay.com"
+      - "devops-interns@razorpay.com"
 
 # Service configuration
 service:
@@ -66,18 +63,4 @@ ingress:
   host: "oauth2-proxy.razorpay.com"
   entryPoints:
     - web
-  middlewareNamespace: "traefik-v2"
-
-# Legacy values for backward compatibility
-replicaCount: 1
-nameOverride: ""
-fullnameOverride: ""
-
-resources:
-  requests:
-    cpu: 50m
-    memory: 50Mi
-
-nodeSelector: {}
-tolerations: []
-affinity: {} 
+  middlewareNamespace: "traefik-v2" 
