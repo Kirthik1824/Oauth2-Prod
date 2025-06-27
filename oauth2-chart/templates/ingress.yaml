@@ -6,6 +6,7 @@ metadata:
   namespace: {{ .Values.namespace }}
   labels:
     {{- include "oauth2-proxy.labels" . | nindent 4 }}
+    bu: all
   annotations:
     kubernetes.io/ingress.class: {{ .Values.ingress.className }}
 spec:
@@ -16,6 +17,11 @@ spec:
   routes:
   - kind: Rule
     match: Host(`{{ .Values.ingress.host }}`)
+    {{- if .Values.ingress.middlewareNamespace }}
+    middlewares:
+    - name: default-headers
+      namespace: {{ .Values.ingress.middlewareNamespace }}
+    {{- end }}
     services:
     - name: {{ include "oauth2-proxy.fullname" . }}
       namespace: {{ .Values.namespace }}

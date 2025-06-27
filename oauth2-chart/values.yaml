@@ -1,26 +1,41 @@
-replicaCount: 1
+# Application configuration
+app_env: stage
+namespace: oauth2-proxy
+create_ns: true
 
-image:
-  repository: quay.io/oauth2-proxy/oauth2-proxy
-  tag: "v7.4.0"
-  pullPolicy: IfNotPresent
+# Image configuration  
+web_image_tag: "oauth2-proxy:v7.4.0"
+image_repository: c.rzp.io/razorpay
 
-nameOverride: ""
-fullnameOverride: ""
+# Deployment configuration
+oauth2_proxy_replicas: 1
+oauth2_proxy_node_selector: node.kubernetes.io/worker-generic
+oauth2_proxy_dns_policy: ClusterFirst
 
-namespace: oauth2-test
+# Resource configuration
+web_requests_cpu: 50m
+web_requests_memory: 50Mi
 
+# IAM configuration
+iamrolename: stage-oauth2-proxy
+
+# OAuth2 configuration
 oauth2:
   provider: google
-  clientId: "1056549117847-q78vl39mkvic5da30ugsokrsls6k8gl8.apps.googleusercontent.com"
-  clientSecret: "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"
-  cookieSecret: "k9fBB9DYqfFRsrHoK4XIl7Usg8kfEJhdQDtTo0IiyFE="
-  redirectUrl: "https://oauth-test.razorpay.com/oauth2/callback"
+  # Config file approach - using volume mounts like credstash-ui
+  configSecret: "oauth2-proxy-config"
+  configKeys:
+    oauth2Config: "OAUTH2_PROXY_CONFIG"
+    googleServiceAccount: "GOOGLE_JSON"
+  mountPath: "/etc/oauth2proxy"
+  
+  # Configuration values (will be templated into config file)
+  httpAddress: "0.0.0.0:4180"
+  redirectUrl: "https://oauth2-proxy.concierge.stage.razorpay.in/oauth2/callback"
   emailDomain: "*"
   cookieDomain: "razorpay.com"
-  httpAddress: "0.0.0.0:4180"
   
-  # Additional OAuth2 proxy arguments
+  # OAuth2 proxy flags
   passAuthorizationHeader: true
   passAccessToken: true
   passUserHeaders: true
@@ -30,22 +45,39 @@ oauth2:
   reverseProxy: true
   # whitelistDomain: "kirthik.razorpay.com"
 
+  # Google Groups configuration
+  googleGroups:
+    enabled: true
+    adminEmail: "admin@razorpay.com"
+    allowedGroups:
+      - "developers@razorpay.com"
+      - "devops@razorpay.com"
+
+# Service configuration
 service:
   type: ClusterIP
   port: 80
   targetPort: 4180
 
+# Ingress configuration
 ingress:
   enabled: true
-  className: "traefik-external"
-  host: "oauth-test.razorpay.com"
+  className: "traefik-concierge"
+  host: "oauth2-proxy.concierge.stage.razorpay.in"
   entryPoints:
     - web
+  middlewareNamespace: "traefik-v2"
 
-resources: {}
+# Legacy values for backward compatibility
+replicaCount: 1
+nameOverride: ""
+fullnameOverride: ""
+
+resources:
+  requests:
+    cpu: 50m
+    memory: 50Mi
 
 nodeSelector: {}
-
 tolerations: []
-
 affinity: {} 

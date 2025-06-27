@@ -1,6 +1,6 @@
 apiVersion: v2
 name: oauth2-proxy
-description: A Helm chart for OAuth2 Proxy
+description: Razorpay Application Helm Chart
 type: application
 version: 0.1.0
-appVersion: "v7.4.0" 
+appVersion: "v7.4.0"  

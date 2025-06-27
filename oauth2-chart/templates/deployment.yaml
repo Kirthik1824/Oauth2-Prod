@@ -5,65 +5,96 @@ metadata:
   namespace: {{ .Values.namespace }}
   labels:
     {{- include "oauth2-proxy.labels" . | nindent 4 }}
+    bu: all
+    name: oauth2-proxy
 spec:
-  replicas: {{ .Values.replicaCount }}
+  progressDeadlineSeconds: 600
+  replicas: {{ .Values.oauth2_proxy_replicas }}
+  revisionHistoryLimit: 10
   selector:
     matchLabels:
       {{- include "oauth2-proxy.selectorLabels" . | nindent 6 }}
+  strategy:
+    rollingUpdate:
+      maxSurge: 1
+      maxUnavailable: 0
+    type: RollingUpdate
   template:
     metadata:
+      annotations:
+        iam.amazonaws.com/role: {{ .Values.iamrolename }}
       labels:
         {{- include "oauth2-proxy.selectorLabels" . | nindent 8 }}
+        bu: all
+        name: oauth2-proxy
     spec:
+      affinity:
+        podAntiAffinity:
+          preferredDuringSchedulingIgnoredDuringExecution:
+          - podAffinityTerm:
+              labelSelector:
+                matchExpressions:
+                - key: name
+                  operator: In
+                  values:
+                  - oauth2-proxy
+              topologyKey: kubernetes.io/hostname
+            weight: 100
+      automountServiceAccountToken: true
       containers:
       - name: {{ .Chart.Name }}
-        image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"
-        imagePullPolicy: {{ .Values.image.pullPolicy }}
+        image: "{{ .Values.image_repository }}/{{ .Values.web_image_tag }}"
+        imagePullPolicy: IfNotPresent
         ports:
         - containerPort: {{ .Values.service.targetPort }}
         args:
-        - --http-address={{ .Values.oauth2.httpAddress }}
-        - --provider={{ .Values.oauth2.provider }}
-        - --client-id={{ .Values.oauth2.clientId }}
-        - --client-secret={{ .Values.oauth2.clientSecret }}
-        - --cookie-secret={{ .Values.oauth2.cookieSecret }}
-        - --redirect-url={{ .Values.oauth2.redirectUrl }}
-        - --email-domain={{ .Values.oauth2.emailDomain }}
-        {{- if .Values.oauth2.passAuthorizationHeader }}
-        - --pass-authorization-header=true
-        {{- end }}
-        {{- if .Values.oauth2.passAccessToken }}
-        - --pass-access-token=true
-        {{- end }}
-        {{- if .Values.oauth2.passUserHeaders }}
-        - --pass-user-headers=true
-        {{- end }}
-        {{- if .Values.oauth2.setAuthorizationHeader }}
-        - --set-authorization-header=true
-        {{- end }}
-        {{- if .Values.oauth2.setXauthrequest }}
-        - --set-xauthrequest=true
-        {{- end }}
-        {{- if .Values.oauth2.skipProviderButton }}
-        - --skip-provider-button=true
-        {{- end }}
-        {{- if .Values.oauth2.whitelistDomain }}
-        - --whitelist-domain={{ .Values.oauth2.whitelistDomain }}
-        {{- end }}
-        - --cookie-domain={{ .Values.oauth2.cookieDomain }}
-        {{- if .Values.oauth2.reverseProxy }}
-        - --reverse-proxy=true
-        {{- end }}
+        - --config={{ .Values.oauth2.mountPath }}/oauth2_proxy.cfg
+        volumeMounts:
+        - mountPath: {{ .Values.oauth2.mountPath }}
+          name: oauth2-config
+        livenessProbe:
+          failureThreshold: 3
+          httpGet:
+            path: /ping
+            port: {{ .Values.service.targetPort }}
+            scheme: HTTP
+          initialDelaySeconds: 10
+          periodSeconds: 10
+          successThreshold: 1
+          timeoutSeconds: 1
+        readinessProbe:
+          failureThreshold: 3
+          httpGet:
+            path: /ping
+            port: {{ .Values.service.targetPort }}
+            scheme: HTTP
+          initialDelaySeconds: 3
+          periodSeconds: 3
+          successThreshold: 1
+          timeoutSeconds: 1
         resources:
-          {{- toYaml .Values.resources | nindent 10 }}
-      {{- with .Values.nodeSelector }}
+          requests:
+            cpu: {{ .Values.web_requests_cpu }}
+            memory: {{ .Values.web_requests_memory }}
+      dnsConfig:
+        options:
+        - name: ndots
+          value: "1"
+      dnsPolicy: {{ .Values.oauth2_proxy_dns_policy }}
       nodeSelector:
-        {{- toYaml . | nindent 8 }}
-      {{- end }}
-      {{- with .Values.affinity }}
-      affinity:
-        {{- toYaml . | nindent 8 }}
-      {{- end }}
-      {{- with .Values.tolerations }}
-      tolerations:
-        {{- toYaml . | nindent 8 }} 
+        {{ .Values.oauth2_proxy_node_selector }}: ""
+      restartPolicy: Always
+      schedulerName: default-scheduler
+      securityContext: {}
+      terminationGracePeriodSeconds: 0
+      volumes:
+      - name: oauth2-config
+        secret:
+          defaultMode: 420
+          optional: false
+          items:
+          - key: {{ .Values.oauth2.configKeys.oauth2Config }}
+            path: oauth2_proxy.cfg
+          - key: {{ .Values.oauth2.configKeys.googleServiceAccount }}
+            path: google.json
+          secretName: {{ .Values.oauth2.configSecret }} 
